@@ -1,5 +1,11 @@
 NPQH COMPANION — READY FOR GITHUB
 
+LIVE WEBSITE: https://babybel56.github.io/NPQH-Compantion/
+Cloud storage is configured using your existing QTS project.
+Open Settings & backup and sign in with your QTS email and password.
+NPQH records and files are kept separately from QTS.
+The manual installation instructions below are for a different installation.
+
 1. Create a GitHub repository called NPQH-Compantion.
 2. Upload everything INSIDE this folder, including .github.
 3. In GitHub Settings > Pages, choose GitHub Actions.

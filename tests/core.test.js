@@ -27,38 +27,47 @@ test('learning time totals only explicitly logged minutes',()=>{
  const d=seed();d.sessions=[{minutes:45},{minutes:30}];assert.equal(stats(d).hours,1.3);
 });
 function storage(){const data=new Map();return {getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)};}
+test('a fresh browser can use the app’s public cloud configuration',async()=>{
+ globalThis.localStorage=storage();const config={url:'https://example.supabase.co',key:'sb_publishable_example'},a=new Store(config);let connected;
+ a.connect=async(url,key)=>{connected={url,key};a.client={auth:{getSession:async()=>({data:{session:null},error:null})}};};
+ await a.init();assert.deepEqual(connected,config);assert.equal(a.mode,'local');assert.equal(a.data.evidence.length,0);
+});
+test('an explicit browser connection takes priority over the app default',()=>{
+ globalThis.localStorage=storage();const custom={url:'https://custom.supabase.co',key:'sb_publishable_custom'};localStorage.setItem('npqh-connection-v1',JSON.stringify(custom));
+ const a=new Store({url:'https://default.supabase.co',key:'sb_publishable_default'});assert.deepEqual(a.connectionConfig(),custom);
+});
 test('a second tab cannot silently overwrite the first tab’s saved work',async()=>{
- globalThis.localStorage=storage();const a=new Store(),b=new Store();await a.init();await b.init();const next=structuredClone(a.data);next.settings.name='First tab';await a.save(next);
- const other=structuredClone(b.data);other.settings.name='Second tab';await assert.rejects(b.save(other),/another tab/);assert.equal(new Store().local().settings.name,'First tab');
+ globalThis.localStorage=storage();const a=new Store(null),b=new Store(null);await a.init();await b.init();const next=structuredClone(a.data);next.settings.name='First tab';await a.save(next);
+ const other=structuredClone(b.data);other.settings.name='Second tab';await assert.rejects(b.save(other),/another tab/);assert.equal(new Store(null).local().settings.name,'First tab');
 });
 test('a storage failure preserves the previous in-memory workspace',async()=>{
- globalThis.localStorage=storage();const a=new Store();await a.init();const next=structuredClone(a.data);next.settings.name='Changed';localStorage.setItem=()=>{throw Error('Storage full');};
+ globalThis.localStorage=storage();const a=new Store(null);await a.init();const next=structuredClone(a.data);next.settings.name='Changed';localStorage.setItem=()=>{throw Error('Storage full');};
  await assert.rejects(a.save(next),/Storage full/);assert.equal(a.data.settings.name,'William');
 });
 function cloudClient(result,calls){const q={update(value){calls.value=value;return q;},eq(k,v){calls[k]=v;return q;},select(){return q;},maybeSingle:async()=>result};return {from(name){calls.table=name;return q;}};}
 test('cloud saves require the account ID AND the loaded revision',async()=>{
- const calls={},a=new Store();a.mode='cloud';a.user={id:'owner-a'};a.revision=7;a.data=seed();a.client=cloudClient({data:{revision:8},error:null},calls);
+ const calls={},a=new Store(null);a.mode='cloud';a.user={id:'owner-a'};a.revision=7;a.data=seed();a.client=cloudClient({data:{revision:8},error:null},calls);
  const next=structuredClone(a.data);next.settings.school='School';await a.save(next);assert.equal(calls.user_id,'owner-a');assert.equal(calls.revision,7);assert.equal(calls.value.revision,8);assert.equal(a.revision,8);assert.equal(a.data.settings.school,'School');
 });
 test('conflicting cloud edits do not replace memory or advance the revision',async()=>{
- const a=new Store();a.mode='cloud';a.user={id:'owner'};a.revision=3;a.data=seed();a.client=cloudClient({data:null,error:null},{});const next=structuredClone(a.data);next.settings.name='Changed';
+ const a=new Store(null);a.mode='cloud';a.user={id:'owner'};a.revision=3;a.data=seed();a.client=cloudClient({data:null,error:null},{});const next=structuredClone(a.data);next.settings.name='Changed';
  await assert.rejects(a.save(next),/another device/);assert.equal(a.revision,3);assert.equal(a.data.settings.name,'William');
 });
 test('cloud attachment access rejects a different account’s path',async()=>{
- const a=new Store();a.mode='cloud';a.user={id:'owner-a'};await assert.rejects(a.download({location:'cloud',path:'owner-b/document'}),/original account/);
+ const a=new Store(null);a.mode='cloud';a.user={id:'owner-a'};await assert.rejects(a.download({location:'cloud',path:'owner-b/document'}),/original account/);
 });
 test('imports reject missing attachment data before changing any records',async()=>{
- const a=new Store();a.data=seed();const data=seed();data.evidence=[{id:'e',title:'Evidence',attachment:{id:'missing'}}];let saved=false;a.save=async()=>saved=true;
+ const a=new Store(null);a.data=seed();const data=seed();data.evidence=[{id:'e',title:'Evidence',attachment:{id:'missing'}}];let saved=false;a.save=async()=>saved=true;
  await assert.rejects(importBackup(a,{format:'npqh-backup-v1',data,files:[]}),/missing attachments/);assert.equal(saved,false);
 });
 test('an import save failure cleans up newly uploaded files',async()=>{
- const a=new Store(),data=seed();data.evidence=[{id:'e',title:'Evidence',attachment:{id:'original'}}];const deleted=[];a.upload=async()=>({id:'uploaded'});a.removeFile=async a=>deleted.push(a.id);a.save=async()=>{throw Error('Conflict');};
+ const a=new Store(null),data=seed();data.evidence=[{id:'e',title:'Evidence',attachment:{id:'original'}}];const deleted=[];a.upload=async()=>({id:'uploaded'});a.removeFile=async a=>deleted.push(a.id);a.save=async()=>{throw Error('Conflict');};
  await assert.rejects(importBackup(a,{format:'npqh-backup-v1',data,files:[{id:'original',name:'e.txt',type:'text/plain',data:btoa('hello')}]}),/Conflict/);assert.deepEqual(deleted,['uploaded']);
 });
 test('a full backup round trip preserves attachment bytes and remaps to new storage',async()=>{
  globalThis.FileReader=class {readAsDataURL(blob){blob.arrayBuffer().then(b=>{this.result='data:application/octet-stream;base64,'+Buffer.from(b).toString('base64');this.onload();}).catch(e=>{this.error=e;this.onerror();});}};
- const source=new Store();source.data=seed();source.data.evidence=[{id:'e',title:'A real attachment',attachment:{id:'original',name:'test.txt',type:'text/plain',location:'local'}}];source.download=async()=>new Blob(['Hello, 中文!']);
+ const source=new Store(null);source.data=seed();source.data.evidence=[{id:'e',title:'A real attachment',attachment:{id:'original',name:'test.txt',type:'text/plain',location:'local'}}];source.download=async()=>new Blob(['Hello, 中文!']);
  const backup=await exportBackup(source);assert.equal(backup.files.length,1);assert.equal(Buffer.from(backup.files[0].data,'base64').toString(),'Hello, 中文!');
- const target=new Store();let contents;target.upload=async file=>{contents=await file.text();return {id:'new',location:'cloud',path:'new-owner/new/test.txt',name:file.name};};target.save=async next=>target.data=next;
+ const target=new Store(null);let contents;target.upload=async file=>{contents=await file.text();return {id:'new',location:'cloud',path:'new-owner/new/test.txt',name:file.name};};target.save=async next=>target.data=next;
  await importBackup(target,backup);assert.equal(contents,'Hello, 中文!');assert.equal(target.data.evidence[0].attachment.id,'new');assert.equal(target.data.evidence[0].attachment.path,'new-owner/new/test.txt');assert.equal(source.data.evidence[0].attachment.id,'original');
 });

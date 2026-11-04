@@ -2,6 +2,16 @@
 
 A personal study workspace for William’s Best Practice Network NPQH, starting November 2026. The app is ready for GitHub Pages and optionally Supabase. No installation or build step is needed on GitHub.
 
+## Current live setup
+
+[Open NPQH Companion](https://babybel56.github.io/NPQH-Compantion/).
+
+The deployed app is configured to use your existing **QTS Assessment (AO)** Supabase project. Open **Settings & backup**, then sign in with your QTS email and password. You do not need to create a new Supabase project or copy API keys into the app.
+
+NPQH has its own `npqh_workspaces` table and private `npqh-evidence` bucket. QTS retains its existing tables and bucket. Both apps share the Supabase account system and the project's free-plan resource limits. A publishable key is included in `app/config.js`; it is intended for public browser use, and database/storage policies restrict records to their signed-in owner.
+
+Browser records remain separate from cloud records. To transfer browser work, download a full backup before signing in, then import it into your signed-in workspace.
+
 ## What is included
 
 - Dashboard and the five published learning cycles.
@@ -27,7 +37,9 @@ If `.github` is hidden in File Explorer, enable **View → Show → Hidden items
 
 The app works as soon as the site is live. Until you connect Supabase, records are stored only in that browser. The local preview and GitHub website have separate browser storage: use a full backup to move your work between them.
 
-## Connect private Supabase storage
+## Manual setup for a different Supabase project
+
+The live deployment is already configured as described above. These steps are only for a separate installation.
 
 1. Create a new Supabase project. A separate project avoids accidentally inheriting broader permissions from your QTS database.
 2. Open **SQL Editor**, paste the contents of **`supabase/setup.sql`**, and run it once. This creates `npqh_workspaces` with owner-only access and a private `npqh-evidence` bucket.
@@ -72,7 +84,7 @@ node --check app/main.js
 node --check app/store.js
 ```
 
-The core app has no package dependencies. Supabase’s official JavaScript library is loaded from jsDelivr only when a cloud project is configured. Cloud mode requires internet access; it does not queue offline changes. Browser mode can continue while the loaded app stays open, but this release is not an installable offline PWA.
+The core app has no package dependencies. Supabase’s official JavaScript library **2.118.0** is bundled in `app/vendor` and loaded from the same website when a cloud project is configured. Cloud mode requires internet access; it does not queue offline changes. Browser mode can continue while the loaded app stays open, but this release is not an installable offline PWA.
 
 ## Verify your cloud setup before relying on it
 

@@ -1,19 +1,22 @@
 import { seed, validate, uid } from './core.js';
+import { CLOUD_CONFIG } from './config.js';
 const KEY='npqh-companion-v1',CONFIG='npqh-connection-v1';
 let dbPromise;
 function filesDB(){return dbPromise ||= new Promise((resolve,reject)=>{const r=indexedDB.open('npqh-files',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 async function localFile(mode,id,value){const db=await filesDB();return new Promise((resolve,reject)=>{const tx=db.transaction('files',mode),s=tx.objectStore('files');const r=value===undefined?(mode==='readwrite'?s.delete(id):s.get(id)):s.put(value,id);let result;r.onsuccess=()=>result=r.result;tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('File storage was interrupted.'));});}
 async function sdk(){
  if(window.supabase)return window.supabase;
- await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';s.onload=resolve;s.onerror=()=>{s.remove();reject(Error('Could not load Supabase. Check your connection and try again.'));};document.head.append(s);});
+ await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=new URL('./vendor/supabase-2.118.0.js',import.meta.url).href;s.onload=resolve;s.onerror=()=>{s.remove();reject(Error('Could not load Supabase. Reload the app and try again.'));};document.head.append(s);});
  if(!window.supabase)throw Error('Supabase did not load.');return window.supabase;
 }
 export class Store {
  client=null;user=null;revision=0;mode='local';data=null;
+ constructor(defaultConfig=CLOUD_CONFIG){this.defaultConfig=defaultConfig;}
+ connectionConfig(){return JSON.parse(localStorage.getItem(CONFIG)||'null')||this.defaultConfig;}
  local(){const raw=localStorage.getItem(KEY);this.localRaw=raw;return raw?validate(JSON.parse(raw)):seed();}
  async init(){
   this.data=this.local();
-  const config=JSON.parse(localStorage.getItem(CONFIG)||'null');
+  const config=this.connectionConfig();
   if(config){await this.connect(config.url,config.key);const {data,error}=await this.client.auth.getSession();if(error)throw error;if(data.session)await this.cloud(data.session.user);}
   return this.data;
  }

@@ -1,13 +1,14 @@
--- Run once in a NEW Supabase project's SQL editor.
+-- Run once in a prepared Supabase project's SQL editor.
 -- This uses separate NPQH table/bucket names and does not modify a QTS app.
 begin;
 create table if not exists public.npqh_workspaces (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  data jsonb not null check (jsonb_typeof(data) = 'object' and data->>'schema' = '1'),
+  data jsonb not null check (jsonb_typeof(data) = 'object' and (data->>'schema' = '1') is true),
   revision bigint not null default 1 check (revision > 0),
   updated_at timestamptz not null default now()
 );
 alter table public.npqh_workspaces enable row level security;
+revoke all on public.npqh_workspaces from public;
 revoke all on public.npqh_workspaces from anon;
 revoke all on public.npqh_workspaces from authenticated;
 grant select, insert, update, delete on public.npqh_workspaces to authenticated;

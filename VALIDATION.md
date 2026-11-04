@@ -1,6 +1,6 @@
-# v1.0 verification
+# Verification history
 
-Checked on 4 November 2026.
+Initial application checks on 4 November 2026, before cloud setup:
 
 - All 14 automated tests pass under Node.js 24.
 - JavaScript syntax checks pass for the app, storage module and local server.
@@ -11,3 +11,13 @@ Checked on 4 November 2026.
 - A GitHub repository was not available: no repository or deployment was created. The package includes a GitHub Actions workflow and setup instructions.
 
 The generated website package contains application source and setup files only. It contains no login credentials, personal evidence or browser data.
+
+## Shared Supabase setup, 4 November 2026
+
+- With the user's approval, added the NPQH table and private bucket to the existing QTS project after the account's two-project free limit prevented creation of a third project.
+- NPQH database permissions tested using the authenticated database role: the owner can insert, read and update; a different identity cannot read the owner's row or insert on the owner's behalf. Test changes were rolled back.
+- Confirmed row-level security is enabled, four owner-specific table policies exist, three bucket-specific storage policies exist, and both NPQH and QTS buckets are private.
+- Security and performance advisors returned no findings naming the new NPQH table or policies. Existing project-level/QTS advisories were retained for separate review.
+- All 16 automated tests pass, including public project defaults and browser connection overrides. JavaScript syntax checks pass.
+- The Supabase client is pinned and bundled locally at version 2.118.0. No secret or service-role key is included in the app.
+- Real browser sign-in and signed-in file upload/download still require the user's existing QTS login and have not been represented as completed.
