@@ -1,0 +1,22 @@
+NPQH COMPANION — READY FOR GITHUB
+
+1. Create a GitHub repository called NPQH-Compantion.
+2. Upload everything INSIDE this folder, including .github.
+3. In GitHub Settings > Pages, choose GitHub Actions.
+4. In Actions, run "Check and deploy NPQH Companion".
+5. Open the website link once deployment succeeds.
+
+The app works in browser-only mode immediately.
+
+For private storage across devices:
+6. Create a new Supabase project.
+7. Run supabase/setup.sql in its SQL Editor.
+8. Create your user in Supabase Authentication > Users.
+9. In the app's Settings & backup, enter the project URL and publishable key.
+10. Connect and sign in. Import a full backup to transfer any browser work.
+
+Full setup instructions and explanations are in README.md.
+No password, secret key or personal evidence belongs in GitHub.
+
+This package has not been published yet. You do not need to pay for hosting
+or install a build system to try browser-only mode on GitHub Pages.

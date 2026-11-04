@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+.env
+.env.*
+node_modules/
+site/
+qa/
+*.zip
+*backup*.json
+*records*.json
